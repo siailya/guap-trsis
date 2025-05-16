@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Cars Sales AJAX App</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        body {
+            background: #f6f8fa;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            color: #222;
+        }
+
+        #app {
+            max-width: 550px;
+            margin: 2.5rem auto;
+            padding: 2rem 2.5rem 2rem 2.5rem;
+            background: #fff;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 32px 0 #0001;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 2rem;
+            letter-spacing: 1px;
+            color: #0a486a;
+        }
+
+        h2 {
+            margin: 2rem 0 1rem 0;
+            font-size: 1.2rem;
+            color: #225d74;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+            background: #fafdff;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 2px 8px #eee7;
+        }
+
+        th, td {
+            border-bottom: 1px solid #eee;
+            padding: 0.7rem 0.4rem;
+            text-align: left;
+        }
+
+        th {
+            background: #e6f3fb;
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .actions button {
+            background: #fa5858;
+            color: #fff;
+            border: none;
+            border-radius: 0.7em;
+            padding: 0.4rem 1rem;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 1px 4px #0001;
+        }
+
+        .actions button:hover {
+            background: #d42c2c;
+        }
+
+        form {
+            margin-top: 1rem;
+            background: #f4faff;
+            border-radius: 1rem;
+            padding: 1rem 1.5rem 1rem 1.5rem;
+            box-shadow: 0 2px 8px #e0f0ff;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3em;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="number"] {
+            border: 1px solid #c8e0fa;
+            border-radius: 0.5em;
+            padding: 0.5em;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+
+        input:focus {
+            border-color: #70baff;
+        }
+
+        button[type="submit"] {
+            background: #2196f3;
+            color: #fff;
+            border: none;
+            border-radius: 0.6em;
+            padding: 0.6rem 1.5rem;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.15s, box-shadow 0.15s;
+            box-shadow: 0 2px 8px #2196f320;
+        }
+
+        button[type="submit"]:hover {
+            background: #0b73c9;
+        }
+
+        .error {
+            color: #d32f2f;
+            margin: 0.7em 0 0 0;
+            font-weight: 500;
+            background: #ffeaea;
+            border-radius: 0.5em;
+            padding: 0.6em 1em;
+        }
+
+        .success {
+            color: #238a3e;
+            margin: 0.7em 0 0 0;
+            font-weight: 500;
+            background: #e8f5e9;
+            border-radius: 0.5em;
+            padding: 0.6em 1em;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <h1>Управление автомобилями</h1>
+
+    <h2>Список автомобилей</h2>
+    <table v-if="cars.length">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Модель</th>
+            <th>Год</th>
+            <th>Действие</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="car in cars" :key="car.id">
+            <td>{{ car.id }}</td>
+            <td>{{ car.model }}</td>
+            <td>{{ car.year }}</td>
+            <td class="actions">
+                <button @click="deleteCar(car.id)">Удалить</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <p v-else>Автомобили не найдены.</p>
+
+    <h2>Добавить автомобиль</h2>
+    <form @submit.prevent="addCar">
+        <label>
+            Модель:
+            <input type="text" v-model.trim="newModel" placeholder="Напр. Toyota" required autofocus>
+        </label>
+        <label>
+            Год:
+            <input type="number" v-model.number="newYear" placeholder="Напр. 2022" required min="1886" max="2099">
+        </label>
+        <button type="submit">Добавить</button>
+    </form>
+    <div v-if="success" class="success">{{ success }}</div>
+    <div v-if="error" class="error">{{ error }}</div>
+</div>
+
+<script>
+    const {createApp} = Vue;
+
+    createApp({
+        data() {
+            return {
+                cars: [],
+                newModel: '',
+                newYear: '',
+                error: '',
+                success: ''
+            }
+        },
+        methods: {
+            async fetchCars() {
+                try {
+                    const res = await fetch('/api/cars');
+                    if (!res.ok) throw new Error(`Ошибка ${res.status}`);
+                    this.cars = await res.json();
+                } catch (e) {
+                    this.error = 'Не удалось загрузить список: ' + e.message;
+                }
+            },
+            async addCar() {
+                this.error = '';
+                this.success = '';
+                if (!this.newModel || !this.newYear) {
+                    this.error = 'Заполните все поля.';
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/cars', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            model: this.newModel,
+                            year: this.newYear
+                        })
+                    });
+                    if ([200, 201].includes(res.status)) {
+                        this.success = 'Автомобиль добавлен!';
+                        this.newModel = '';
+                        this.newYear = '';
+                    } else if (res.status === 400) {
+                        throw new Error('Неверные данные');
+                    } else {
+                        throw new Error(`Неожиданный ответ: ${res.status}`);
+                    }
+                } catch (e) {
+                    this.error = 'Ошибка добавления: ' + e.message;
+                } finally {
+                    await this.fetchCars();
+                }
+            },
+            async deleteCar(id) {
+                this.error = '';
+                this.success = '';
+                if (!confirm('Удалить автомобиль ' + id + '?')) return;
+                try {
+                    const res = await fetch(`/api/cars/${id}`, {method: 'DELETE'});
+                    if (res.status === 204) {
+                        this.success = 'Автомобиль удалён!';
+                        await this.fetchCars();
+                    } else if (res.status === 404) {
+                        throw new Error('Не найдено');
+                    } else {
+                        throw new Error(`Ошибка: ${res.status}`);
+                    }
+                } catch (e) {
+                    this.error = 'Ошибка удаления: ' + e.message;
+                }
+            }
+        },
+        mounted() {
+            this.fetchCars();
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>

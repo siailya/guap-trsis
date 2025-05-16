@@ -1,0 +1,7 @@
+{
+  "interfaceOnly": true,
+  "useTags": true,
+  "useSpringBoot3": true,
+  "useSwaggerUI": true,
+  "useSpringController": true
+}

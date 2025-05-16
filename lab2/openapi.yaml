@@ -1,0 +1,99 @@
+openapi: 3.0.1
+info:
+  title: Cars Sales API
+  version: '1.0'
+  description: REST сервис для управления списком автомобилей
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/cars:
+    get:
+      summary: Получить список автомобилей
+      operationId: listCars
+      responses:
+        '200':
+          description: Массив автомобилей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Car'
+    post:
+      summary: Создать новый автомобиль
+      operationId: createCar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewCar'
+      responses:
+        '201':
+          description: Автомобиль создан
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL нового объекта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '400':
+          description: Неверные входные данные
+
+  /api/cars/{id}:
+    get:
+      summary: Получить автомобиль по ID
+      operationId: getCarById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Детали автомобиля
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '404':
+          description: Не найдено
+    delete:
+      summary: Удалить автомобиль по ID
+      operationId: deleteCar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Успешно удалено
+        '404':
+          description: Не найдено
+
+components:
+  schemas:
+    Car:
+      type: object
+      properties:
+        id:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+      required: [ id, model, year ]
+    NewCar:
+      type: object
+      properties:
+        model:
+          type: string
+        year:
+          type: integer
+      required: [ model, year ]
